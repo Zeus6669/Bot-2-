@@ -80,17 +80,31 @@ def update_relationship(user_id):
 # =========================
 user_rooms = {}
 
-async def create_room():
-    res = await client.post(
+def create_room():
+    res = requests.post(
         f"{BASE_URL}/api/v1/rooms",
         headers=HEADERS,
         json={"character_id": CHARACTER_ID}
     )
-    return res.json()["room_id"]
 
-async def get_room(user_id):
+    data = res.json()
+    print("ROOM RESPONSE:", data)  # debug
+
+    # try all possible keys safely
+    return (
+        data.get("room_id")
+        or data.get("roomId")
+        or (data.get("room") or {}).get("id")
+    )
+    def get_room(user_id):
     if user_id not in user_rooms:
-        user_rooms[user_id] = await create_room()
+        room_id = create_room()
+
+        if not room_id:
+            raise Exception("Failed to create room - no room_id returned")
+
+        user_rooms[user_id] = room_id
+
     return user_rooms[user_id]
 
 # =========================
