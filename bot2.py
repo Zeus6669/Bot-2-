@@ -76,8 +76,9 @@ def update_relationship(user_id):
     conn.commit()
 
 # =========================
-# 🧠 ROOM SYSTEM
+# 🧠 ROOM SYSTEM (OH API)
 # =========================
+
 user_rooms = {}
 
 def create_room():
@@ -88,20 +89,21 @@ def create_room():
     )
 
     data = res.json()
-    print("ROOM RESPONSE:", data)  # debug
+    print("ROOM RESPONSE:", data)
 
-    # try all possible keys safely
     return (
         data.get("room_id")
         or data.get("roomId")
         or (data.get("room") or {}).get("id")
     )
-    def get_room(user_id):
+
+
+def get_room(user_id):
     if user_id not in user_rooms:
         room_id = create_room()
 
         if not room_id:
-            raise Exception("Failed to create room - no room_id returned")
+            raise Exception("Room creation failed: no room_id returned")
 
         user_rooms[user_id] = room_id
 
