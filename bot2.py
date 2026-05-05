@@ -117,19 +117,30 @@ async def chat(user_id, message):
         json={
             "room_id": room_id,
             "character_id": CHARACTER_ID,
-            "prompt": message
+            "prompt": message,
+            "temperature": 0.7,
+            "max_tokens": 200
         }
     )
 
-    data = res.json()
+    try:
+        data = res.json()
+    except Exception:
+        return f"API ERROR (non-json): {res.text}"
+
     print("CHAT RESPONSE:", data)
 
+    # 🚨 SHOW REAL ERROR IF EXISTS
+    if "error" in data:
+        return f"API ERROR: {data['error']}"
+
+    # ✅ Handle all possible response formats
     return (
         data.get("response")
         or data.get("message")
         or data.get("text")
         or data.get("reply")
-        or "hmm... say that again?"
+        or "No response from AI"
     )
 
 # =========================
