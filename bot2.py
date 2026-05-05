@@ -1,9 +1,7 @@
 import os
 import sqlite3
-import random
 import asyncio
-import requests
-import time
+import httpx
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
@@ -12,14 +10,11 @@ from fastapi import FastAPI, Request
 import uvicorn
 from contextlib import asynccontextmanager
 
-import httpx
-
 # =========================
 # 🔐 ENV VARIABLES
 # =========================
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-
 OH_API_KEY = os.getenv("OH_API_KEY")
 CHARACTER_ID = os.getenv("OH_CHARACTER_ID")
 
@@ -59,7 +54,7 @@ conn.commit()
 client = httpx.AsyncClient(timeout=30)
 
 # =========================
-# 💕 RELATIONSHIP SYSTEM
+# 💕 USER SYSTEM
 # =========================
 def create_user(user_id):
     cursor.execute(
@@ -76,42 +71,42 @@ def update_relationship(user_id):
     conn.commit()
 
 # =========================
-# 🧠 ROOM SYSTEM (OH API)
+# 🧠 ROOM SYSTEM (ASYNC FIXED)
 # =========================
-
 user_rooms = {}
 
-def create_room():
-    res = requests.post(
+async def create_room():
+    res = await client.post(
         f"{BASE_URL}/api/v1/rooms",
         headers=HEADERS,
-        json={"character_id": CHARACTER_ID,
-        "user_gender": "male"}
+        json={
+            "character_id": CHARACTER_ID,
+            "user_gender": "male"
+        }
     )
 
     data = res.json()
     print("ROOM RESPONSE:", data)
 
-    return (
+    room_id = (
         data.get("room_id")
         or data.get("roomId")
         or (data.get("room") or {}).get("id")
     )
 
+    if not room_id:
+        raise Exception("Room creation failed")
 
-def get_room(user_id):
+    return room_id
+
+async def get_room(user_id):
     if user_id not in user_rooms:
-        room_id = create_room()
-
-        if not room_id:
-            raise Exception("Room creation failed: no room_id returned")
-
-        user_rooms[user_id] = room_id
+        user_rooms[user_id] = await create_room()
 
     return user_rooms[user_id]
 
 # =========================
-# 💬 CHAT (ASYNC FIXED)
+# 💬 CHAT
 # =========================
 async def chat(user_id, message):
     room_id = await get_room(user_id)
@@ -130,7 +125,7 @@ async def chat(user_id, message):
     return data.get("response", "hmm... say that again?")
 
 # =========================
-# 🎨 IMAGE (ASYNC FIXED)
+# 🎨 IMAGE
 # =========================
 async def generate_image(prompt):
     res = await client.post(
@@ -163,7 +158,7 @@ async def generate_image(prompt):
     raise Exception("Image timeout")
 
 # =========================
-# 🎥 VIDEO (ASYNC FIXED)
+# 🎥 VIDEO
 # =========================
 async def generate_video(prompt):
     res = await client.post(
@@ -196,7 +191,7 @@ async def generate_video(prompt):
     raise Exception("Video timeout")
 
 # =========================
-# 🔊 AUDIO (ASYNC FIXED)
+# 🔊 AUDIO
 # =========================
 async def generate_audio(text):
     res = await client.post(
@@ -229,7 +224,7 @@ async def generate_audio(text):
     raise Exception("Audio timeout")
 
 # =========================
-# 🤖 TELEGRAM HANDLER (ASYNC FIXED)
+# 🤖 TELEGRAM HANDLER
 # =========================
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -261,7 +256,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(reply)
 
     except Exception as e:
-        print("Error:", e)
+        print("ERROR:", e)
         await update.message.reply_text("ugh something broke 😩 try again")
 
 # =========================
@@ -298,4 +293,3 @@ async def home():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-    
