@@ -117,12 +117,12 @@ async def chat(user_id, message):
         json={
             "room_id": room_id,
             "character_id": CHARACTER_ID,
-            "message": message
+            "prompt": message
         }
     )
 
     data = res.json()
-    print("CHAT RESPONSE:", data)  # 👈 ADD THIS FOR DEBUG
+    print("CHAT RESPONSE:", data)
 
     return (
         data.get("response")
@@ -140,8 +140,9 @@ async def generate_image(prompt):
         f"{BASE_URL}/api/v1/images",
         headers=HEADERS,
         json={
-            "character_id": CHARACTER_ID,
-            "prompt": prompt
+    "room_id": room_id,
+    "character_id": CHARACTER_ID,
+    "prompt": message
         }
     )
 
