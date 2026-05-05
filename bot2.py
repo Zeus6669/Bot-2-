@@ -85,7 +85,8 @@ def create_room():
     res = requests.post(
         f"{BASE_URL}/api/v1/rooms",
         headers=HEADERS,
-        json={"character_id": CHARACTER_ID}
+        json={"character_id": CHARACTER_ID,
+        "user_gender": "male"}
     )
 
     data = res.json()
