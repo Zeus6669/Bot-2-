@@ -122,7 +122,15 @@ async def chat(user_id, message):
     )
 
     data = res.json()
-    return data.get("response", "hmm... say that again?")
+    print("CHAT RESPONSE:", data)  # 👈 ADD THIS FOR DEBUG
+
+    return (
+        data.get("response")
+        or data.get("message")
+        or data.get("text")
+        or data.get("reply")
+        or "hmm... say that again?"
+    )
 
 # =========================
 # 🎨 IMAGE
